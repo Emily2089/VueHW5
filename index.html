@@ -14,7 +14,6 @@
       <div class="mt-4">
         <!-- 產品列表 -->
         <user-product-modal :temp-product="tempProduct" :add-to-cart="addToCart" ref="userModal"></user-product-modal>
-
         <table class="table align-middle">
           <thead>
             <tr>
@@ -57,13 +56,13 @@
             </tr>
           </tbody>
         </table>
+
         <!-- 購物車列表 -->
         <template v-if="carts?.carts?.length !== 0">
           <div class="text-end">
             <button class="btn btn-outline-danger" type="button" @click="removeCartItem('移除')" :disabled="status.cartQtyLoading !== ''">清空購物車</button>
           </div>
         </template>
-
         <table class="table align-middle">
           <thead>
             <tr>
@@ -110,10 +109,10 @@
           </tfoot>
         </table>
       </div>
+
       <!-- 表單驗證 -->
       <div class="my-5 row justify-content-center">
         <v-form ref="form" class="col-md-6" @submit="createOrder" v-slot="{ errors }">
-          {{ errors }}
           <div class="mb-3">
             <label for="email" class="form-label">Email</label>
             <v-field id="email" name="Email" type="email" class="form-control" placeholder="請輸入 Email" 
