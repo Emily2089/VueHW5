@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week5</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+
+</head>
+<body>
+  <div id="app">
+    <div class="container">
+      <div class="mt-4">
+        <!-- "查看更多" Modal -->
+        <user-product-modal :temp-product="tempProduct" :add-to-cart="addToCart" ref="userModal"></user-product-modal>
+        <!-- 產品列表 -->
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>圖片</th>
+              <th>商品名稱</th>
+              <th>價格</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="product in products" :key="product.id">
+              <td style="width: 200px">
+                <div style="height: 100px; background-size: cover; background-position: center"
+                  :style="{ backgroundImage: `url(${ product.mainImg })` }">
+                </div>
+              </td>
+              <td>
+                {{ product.title }}
+              </td>
+              <td>
+                <div class="h5" v-if="product.origin_price === product.price">{{ product.price }} 元</div>
+                <div v-else>
+                  <del class="h6">原價 {{ product.origin_price }} 元</del>
+                  <div class="h5 text-danger">現在只要 {{ product.price }} 元</div>
+                </div>
+              </td>
+              <td>
+                <div class="btn-group btn-group-sm">
+                  <button type="button" class="btn btn-outline-secondary" @click="openModal(product)">
+                    <i class="fas fa-spinner fa-pulse"></i>
+                    查看更多
+                  </button>
+                  <button type="button" class="btn btn-outline-danger" :disabled="product.id === status.addToCartLoading" @click="addToCart(product.id)">
+                    <span v-if="product.id === status.addToCartLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <i class="fas fa-spinner fa-pulse"></i>
+                    加到購物車
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <!-- 購物車列表 -->
+        <template v-if="carts?.carts?.length !== 0">
+          <div class="text-end">
+            <button class="btn btn-outline-danger" type="button" @click="removeCartItem('移除')" :disabled="status.cartQtyLoading !== ''">清空購物車</button>
+          </div>
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th></th>
+                <th>品名</th>
+                <th style="width: 150px">數量/單位</th>
+                <th>單價</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, key) in carts.carts" :key="item.id">
+                <td>
+                  <button type="button" class="btn btn-outline-danger btn-sm" @click="removeCartItem(item)" :disabled="status.cartQtyLoading !== ''">
+                    <i class="fas fa-spinner fa-pulse"></i>
+                    x
+                  </button>
+                </td>
+                <td>
+                  {{ item.product.title }}
+                </td>
+                <td>
+                  <div class="input-group input-group-sm">
+                    <div class="input-group mb-3">
+                      <select name="" id="" class="select-control" v-model="item.qty" @change="changeCartQty(item)" :disabled="status.cartQtyLoading !== ''">
+                        <template>
+                          <option :value="item.qty">{{ item.qty }}</option>
+                        </template>
+                        <option :value="i" v-for="i in 20" :key="'cartQty' + i">{{ i }}</option>
+                      </select>
+                      <span class="input-group-text" id="basic-addon2">{{ item.product.unit }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-end">
+                  {{ item.total }}
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" class="text-end">總計</td>
+                <td class="text-end">{{ carts.total }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </template>
+      </div>
+      <!-- 表單驗證 -->
+      <template v-if="carts?.carts?.length !== 0">
+        <div class="my-5 row justify-content-center">
+          <v-form ref="form" class="col-md-6" @submit="createOrder" v-slot="{ errors }">
+            {{ errors }}
+            <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <v-field id="email" name="Email" type="email" class="form-control" placeholder="請輸入 Email" rules="email|required"></v-field>
+              <error-message name="Email"></error-message>
+            </div>
+            <div class="mb-3">
+              <label for="name" class="form-label">收件人姓名</label>
+              <v-field id="name" name="姓名" type="text" class="form-control" placeholder="請輸入姓名" rules="required"></v-field>
+              <error-message name="姓名"></error-message>
+            </div>
+            <div class="mb-3">
+              <label for="tel" class="form-label">收件人電話</label>
+              <v-field id="tel" name="電話" type="text" class="form-control" placeholder="請輸入電話"></v-field>
+              <error-message name="電話"></error-message>
+            </div>
+            <div class="mb-3">
+              <label for="address" class="form-label">收件人地址</label>
+              <v-field id="address" name="地址" type="text" class="form-control" placeholder="請輸入地址"></v-field>
+              <error-message name="地址"></error-message>
+            </div>
+            <div class="mb-3">
+              <label for="message" class="form-label">留言</label>
+              <v-field name="留言" id="message" as="textarea" cols="30" rows="10" class="form-control"></v-field>
+            </div>
+            <div class="text-end">
+              <button type="submit" class="btn btn-danger">送出訂單</button>
+            </div>
+          </v-form>
+        </div>
+      </template>
+    </div>
+  </div>
+  
+  <!-- axios -->
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-/bQdsTh/da6pkI1MST/rWKFNjaCP5gBSY4sEBT38Q/9RBh9AH40zEOg7Hlq2THRZ" crossorigin="anonymous"></script>
+  <!-- Vue 以及 VeeValidate 相關套件 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vee-validate@4.12.5/dist/vee-validate.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@vee-validate/rules@4.12.5/dist/vee-validate-rules.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@vee-validate/i18n@4.12.5/dist/vee-validate-i18n.min.js"></script>
+
+
+  <script src="./index.js" type="module"></script>
+</body>
+</html>
