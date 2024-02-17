@@ -1,21 +1,23 @@
-import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import userProductModal from './userProductModal.js';
 
-VeeValidate.defineRule('email', VeeValidateRules['email']);
-VeeValidate.defineRule('required', VeeValidateRules['required']);
+Object.keys(VeeValidateRules).forEach(rule => {
+  if (rule !== 'default') {
+    VeeValidate.defineRule(rule, VeeValidateRules[rule]);
+  }
+});
 
 // 讀取外部的資源
 VeeValidateI18n.loadLocaleFromURL('./zh_TW.json');
 // Activate the locale
 VeeValidate.configure({
-  generateMessage: VeeValidateI18n.localize('zh_TW'), // 切換成中文版
-  validateOnInput: true, // 修改驗證方式，調整為：輸入文字時，就立即進行驗證
+  generateMessage: VeeValidateI18n.localize('zh_TW'), // note：切換成中文版
+  validateOnInput: true, // note：修改驗證方式，調整為：輸入文字時，就立即進行驗證
 });
 
 const apiUrl = 'https://vue3-course-api.hexschool.io';
 const apiPath = 'emily-apitest';
 
-const app = createApp({
+const app = Vue.createApp({
   data() {
     return {
       products: [],
@@ -24,7 +26,20 @@ const app = createApp({
         addToCartLoading: '',
         cartQtyLoading: '',
       },
-      carts: {},
+      carts: {
+        carts: {},
+        total: 0,
+        final_total: 0,
+      },
+      form: {
+        user: {
+          email: '',
+          name: '',
+          tel: '',
+          address: '',
+        },
+        message: '',
+      },
     }
   },
   components: {
@@ -51,7 +66,6 @@ const app = createApp({
       this.status.addToCartLoading = product_id;
       axios.post(`${apiUrl}/v2/api/${apiPath}/cart`, { data: order })
         .then(res => {
-          console.log(res);
           this.getCart();
           this.status.addToCartLoading = '';
           this.$refs.userModal.close();
@@ -66,7 +80,6 @@ const app = createApp({
       this.status.cartQtyLoading = item.id;
       axios.put(`${apiUrl}/v2/api/${apiPath}/cart/${item.id}`, { data: order })
         .then(res => {
-          console.log(res);
           this.status.cartQtyLoading = '';
           this.getCart();
         })
@@ -91,19 +104,27 @@ const app = createApp({
     getCart() {
       axios.get(`${apiUrl}/v2/api/${apiPath}/cart`)
         .then(res => {
-          console.log(res);
           this.carts = res.data.data;
         })
         .catch(err => alert(err.response.data.message))
     },
     createOrder() {
-      console.log('hello');
+      if(!this.carts.carts.length) {
+        alert('請先加入產品至購物車');
+      }else {
+        axios.post(`${apiUrl}/v2/api/${apiPath}/order`, { data: this.form })
+        .then(res => {
+          alert(res.data.message);
+          this.$refs.form.resetForm();
+          this.getCart();
+        })
+        .catch(err => alert(err.response.data.message))
+      }
     }
   },
   mounted() {
     this.getProducts();
     this.getCart();
-    // console.log(VeeValidate);
   },
 });
 
